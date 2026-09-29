@@ -1,0 +1,36 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.zip
+*.hdr
+*.bin
+*.raw
+
+# MLflow
+mlruns/
+mlflow.db
+mlartifacts/
+
+# Models (commit only the small final model, explicitly)
+*.ckpt
+checkpoints/
+
+# Secrets
+.env
+*.json.key
+gcp-*.json
+*.token
+
+# macOS / editors
+.DS_Store
+.vscode/

@@ -1,0 +1,51 @@
+[project]
+name = "fruithsi"
+version = "0.1.0"
+description = "Fruit ripeness from hyperspectral images: PLS-DA baseline vs 1D-CNN, served on Cloud Run"
+readme = "README.md"
+authors = [
+    { name = "pnastra", email = "pnastranagant@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "numpy>=2.5.3",
+    "pydantic>=2.13.5",
+    "scipy>=1.18.1",
+    "torch>=2.14.0",
+    "uvicorn>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.7,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "ipykernel>=7.3.0",
+    "jupyter>=1.1.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+]
+train = [
+    "matplotlib>=3.11.2",
+    "mlflow>=3.16.1",
+    "pandas>=3.0.6",
+    "pyarrow>=25.0.1",
+    "scikit-learn>=1.9.1",
+    "spectral>=0.25",
+]
+
+[tool.uv]
+default-groups = ["dev", "train"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "api", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
