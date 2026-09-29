@@ -6,8 +6,8 @@ test:
 lint:
 	uv run ruff check .
 
-data:            # M1
-	@echo "not implemented yet (M1)"
+data:            # M1: FRUIT=Mango by default
+	./scripts/download_data.sh
 
 features:        # M3
 	@echo "not implemented yet (M3)"

@@ -116,16 +116,16 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 ### Week 1 — Data and models
 
 #### M0 — Repo skeleton and license check (≈2.5 h)
-- [ ] Create the public GitHub repo `fruit-ripeness-hsi` (MIT); `uv init`, `uv python pin 3.12`, deps from §3, commit `uv.lock`
-- [ ] `.gitignore` (§9), `CLAUDE.md`, `Makefile` stubs, `src/fruithsi/` package, one trivial passing test
-- [ ] License: check the annotations zip, dataset readme and GitHub repo. If none, draft a short email to the authors (I send it) and note the status in the README.
+- [x] Create the public GitHub repo `fruit-ripeness-hsi` (MIT); `uv init`, `uv python pin 3.12`, deps from §3, commit `uv.lock`
+- [x] `.gitignore` (§9), `CLAUDE.md`, `Makefile` stubs, `src/fruithsi/` package, one trivial passing test
+- [x] License: check the annotations zip, dataset readme and GitHub repo. If none, draft a short email to the authors (I send it) and note the status in the README.
 
 **Done when:** `uv run pytest` passes, the first commit is pushed, and the README states the license status.
 
 #### M1 — Download one fruit (≈2 h, mostly waiting)
-- [ ] Check free disk space (need 2–3× the zip size)
-- [ ] `make data`: annotations + **Mango or Kaki**, resume-capable download (`curl -C -`), extract to `data/raw/<fruit>/`
-- [ ] Record the folder tree (depth 3) and file counts in §12
+- [x] Check free disk space (need 2–3× the zip size)
+- [x] `make data`: annotations + **Mango or Kaki**, resume-capable download (`curl -C -`), extract to `data/raw/<fruit>/`
+- [x] Record the folder tree (depth 3) and file counts in §12
 
 **Done when:** the data is extracted and the tree is in §12.
 
@@ -320,4 +320,14 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | Date | Milestone | Notes |
 |---|---|---|
 | 2026-09-29 | M0 (local part) | Skeleton, uv deps (serving in main deps; `train`/`dev` groups), lint+test pass, first commit local. License: none stated anywhere; email drafted, not sent. |
-| | | Pending for M0: create public GitHub repo + push (awaiting OK). Next: M1 (choose Mango vs Kaki). |
+| 2026-09-29 | M0 done | Public repo https://github.com/pnastra/fruit-ripeness-hsi pushed. License email still to be sent by me. |
+| 2026-09-29 | M1 done | Chose **Mango** (2.7 GB zip, 4.1 GB extracted; 167 GB free). `make data` = `scripts/download_data.sh` (resumable, idempotent). Tree (depth 3) below. Next: M2 (io.py, inventory, go/no-go). |
+
+M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (so "camera" in M2 = VIS vs VIS_COR; VIS_COR is presumably the corrected variant, confirm in M2):
+```
+annotations/            8 json files (train_all, train_only_labeled, val, test; each with a _v2)
+Mango/VIS/              1124 files = 562 cubes (.bin + .hdr), 11 folders day_{1,2,3,4,5,7,8,9,10,11,12}_m3
+Mango/VIS_COR/          1124 files = 562 cubes, same 11 day folders
+_zips/                  Mango.zip, annotations-upd-2024-01-09.zip
+```
+File names look like `mango_day_10_m3_33_back.hdr` (day, fruit number, front/back side).
