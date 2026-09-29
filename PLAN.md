@@ -319,4 +319,5 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 
 | Date | Milestone | Notes |
 |---|---|---|
-| | | |
+| 2026-09-29 | M0 (local part) | Skeleton, uv deps (serving in main deps; `train`/`dev` groups), lint+test pass, first commit local. License: none stated anywhere; email drafted, not sent. |
+| | | Pending for M0: create public GitHub repo + push (awaiting OK). Next: M1 (choose Mango vs Kaki). |
