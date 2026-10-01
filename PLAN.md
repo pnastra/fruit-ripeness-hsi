@@ -323,6 +323,7 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-09-29 | M0 done | Public repo https://github.com/pnastra/fruit-ripeness-hsi pushed. License email still to be sent by me. |
 | 2026-09-29 | M1 done | Chose **Mango** (2.7 GB zip, 4.1 GB extracted; 167 GB free). `make data` = `scripts/download_data.sh` (resumable, idempotent). Tree (depth 3) below. Next: M2 (io.py, inventory, go/no-go). |
 | 2026-10-01 | M2 done | **Go. Decision: Mango, camera VIS (Specim FX10, 397.7-1003.8 nm, 224 bands, 64x64 px crops), task = 3-class ripeness (unripe / perfect / overripe).** README license status updated (email sent 1 Oct). |
+| | | Why VIS: labels identical for both cameras; VIS has the wider range (chlorophyll ~680 nm and water ~970 nm). VIS_COR = Corning microHSI 410, 408-901 nm, 249 bands. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
@@ -332,7 +333,6 @@ Mango/VIS_COR/          1124 files = 562 cubes, same 11 day folders
 _zips/                  Mango.zip, annotations-upd-2024-01-09.zip
 ```
 File names look like `mango_day_10_m3_33_back.hdr` (day, fruit number, front/back side).
-| | | Why VIS: labels identical for both cameras; VIS has the wider range (chlorophyll ~680 nm and water ~970 nm). VIS_COR = Corning microHSI 410, 408-901 nm, 249 bands. |
 
 M2 findings (matter for M3-M5):
 - **Fruit ID = fruit number alone (1-40).** The same 40 mangoes are imaged every day (n per day: 40,38,37,35,32,29,24,19,13,9,5) until each is measured destructively. `(day, number)` would leak across days.
