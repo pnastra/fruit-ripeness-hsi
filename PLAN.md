@@ -145,9 +145,9 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** `spectra.parquet` exists, and a test checks the band count and that there are no NaNs.
 
 #### M4 — Quick EDA (≈3 h, hard timebox)
-- [ ] Label distribution; images per physical fruit
-- [ ] Mean spectra by class (raw vs SNV vs SG derivative) in one figure
-- [ ] Write 3–5 findings for the README and "Decisions for M5" at the end of the notebook
+- [x] Label distribution; images per physical fruit
+- [x] Mean spectra by class (raw vs SNV vs SG derivative) in one figure
+- [x] Write 3–5 findings for the README and "Decisions for M5" at the end of the notebook
 
 **Done when:** the decisions are recorded and the notebook runs top to bottom.
 
@@ -326,6 +326,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | Why VIS: labels identical for both cameras; VIS has the wider range (chlorophyll ~680 nm and water ~970 nm). VIS_COR = Corning microHSI 410, 408-901 nm, 249 bands. |
 | 2026-10-01 | M3 done | `preprocess.py` (mask, mean spectrum, SNV, Savitzky-Golay via `transform()`), `make features` -> `data/processed/spectra.parquet` (562 VIS images x 192 bands, 476.5-998.2 nm). Local notebook `notebooks/local/inspect_samples.ipynb` (gitignored) for browsing samples. |
 | | | Mask = 850 nm band > 0.10, largest blob, fill holes, erode 3 px: 2245-2682 px per image. **Not Otsu** (histogram is a continuum, Otsu cut the fruit). Bands outside 475-1000 nm dropped (SNR < 10 below ~470 nm). Spectra file stores raw means only; SNV/SG are applied on demand. Mask figure saved to `reports/figures/` (gitignored until the license reply). Next: M4 (EDA, hard timebox). |
+| 2026-10-01 | M4 done | `notebooks/01_eda.ipynb` (aggregate plots only, runs top to bottom): label counts, mean spectra raw/SNV/SG1, Fisher ratio, PCA, front-vs-back distance, chlorophyll index; Findings and "Decisions for M5" are at the end of the notebook. Local-only: `notebooks/local/spatial_heterogeneity.ipynb` (index maps, waits for license). |
+| | | Headline: classes are spectrally close (separability 0.06-0.08, PCA overlaps), so expect modest accuracy; majority baseline = 40% of fruits. M5 plan: repeated GroupKFold by fruit_id as headline + single hold-out, PLS-DA on SNV (SG1 as the one alternative). M6 needs my OK for pixel-subset augmentation. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
