@@ -1,4 +1,4 @@
-.PHONY: data features train-baseline train-cnn serve docker-build docker-run deploy test lint
+.PHONY: data inventory features train-baseline train-cnn serve docker-build docker-run deploy test lint
 
 test:
 	uv run pytest
@@ -8,6 +8,9 @@ lint:
 
 data:            # M1: FRUIT=Mango by default
 	./scripts/download_data.sh
+
+inventory:       # M2: cube info + data/processed/inventory.parquet
+	uv run python -m fruithsi.io
 
 features:        # M3
 	@echo "not implemented yet (M3)"

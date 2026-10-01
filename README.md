@@ -12,7 +12,7 @@ Data: DeepHS Fruit 2023 datasets, University of Tübingen Cognitive Systems Lab
 
 **License: not stated** on the download page, in the dataset readme, or in the
 [code repository](https://github.com/cogsys-tuebingen/deephs_fruit) (checked 29 Sep 2026).
-The authors have been asked to clarify (status: draft, not yet sent). Until then this repo
+I emailed the dataset authors on 1 Oct 2026 to ask under what terms the data may be used (status: awaiting reply). Until then this repo
 contains no dataset images; only derived outputs (predictions, mean spectra, plots) are shown.
 
 Citation: Varga, L. A., Makowski, J., Zell, A. (2021). *Measuring the Ripeness of Fruit with

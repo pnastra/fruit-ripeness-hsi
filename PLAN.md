@@ -130,10 +130,10 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the data is extracted and the tree is in §12.
 
 #### M2 — Load, inventory, go/no-go (≈3 h)
-- [ ] `io.py`: read one ENVI cube; print shape, wavelengths, camera
-- [ ] Inventory table (fruit ID, camera, day, path, labels) → `data/processed/inventory.parquet`
-- [ ] Count labelled fruits per ripeness class per camera; pick one camera
-- [ ] **Go:** at least ~30 labelled fruits and at least 2 classes. **No-go:** try the other small fruit once; if it still fails, stop and ask me.
+- [x] `io.py`: read one ENVI cube; print shape, wavelengths, camera
+- [x] Inventory table (fruit ID, camera, day, path, labels) → `data/processed/inventory.parquet`
+- [x] Count labelled fruits per ripeness class per camera; pick one camera
+- [x] **Go:** at least ~30 labelled fruits and at least 2 classes. **No-go:** try the other small fruit once; if it still fails, stop and ask me.
 
 **Done when:** the decision (fruit, camera, task) is in §12, and a test checks the loader on one cube.
 
@@ -323,7 +323,7 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-09-29 | M0 done | Public repo https://github.com/pnastra/fruit-ripeness-hsi pushed. License email still to be sent by me. |
 | 2026-09-29 | M1 done | Chose **Mango** (2.7 GB zip, 4.1 GB extracted; 167 GB free). `make data` = `scripts/download_data.sh` (resumable, idempotent). Tree (depth 3) below. Next: M2 (io.py, inventory, go/no-go). |
 
-M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (so "camera" in M2 = VIS vs VIS_COR; VIS_COR is presumably the corrected variant, confirm in M2):
+M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
 annotations/            8 json files (train_all, train_only_labeled, val, test; each with a _v2)
 Mango/VIS/              1124 files = 562 cubes (.bin + .hdr), 11 folders day_{1,2,3,4,5,7,8,9,10,11,12}_m3
@@ -331,3 +331,13 @@ Mango/VIS_COR/          1124 files = 562 cubes, same 11 day folders
 _zips/                  Mango.zip, annotations-upd-2024-01-09.zip
 ```
 File names look like `mango_day_10_m3_33_back.hdr` (day, fruit number, front/back side).
+| 2026-10-01 | M2 done | **Go. Decision: Mango, camera VIS (Specim FX10, 397.7-1003.8 nm, 224 bands, 64x64 px crops), task = 3-class ripeness (unripe / perfect / overripe).** README license status updated (email sent 1 Oct). |
+| | | Why VIS: labels identical for both cameras; VIS has the wider range (chlorophyll ~680 nm and water ~970 nm). VIS_COR = Corning microHSI 410, 408-901 nm, 249 bands. |
+
+M2 findings (matter for M3-M5):
+- **Fruit ID = fruit number alone (1-40).** The same 40 mangoes are imaged every day (n per day: 40,38,37,35,32,29,24,19,13,9,5) until each is measured destructively. `(day, number)` would leak across days.
+- **Only 40 labelled fruits** = 80 images (front + back), each labelled once on its last imaging day: 16 perfect / 13 unripe / 11 overripe. The other 482 VIS images (earlier days) are unlabelled. Go threshold (>=30 fruits, >=2 classes) met, but marginal: a single grouped hold-out would have ~8 fruits, so report grouped CV (GroupKFold) alongside it in M5.
+- **The official train/val/test split leaks**: front and back of the same fruit land in different splits. Do not use it; build our own split by fruit ID. Record `id`s also collide across the three annotation files, so key on (camera, header path).
+- ENVI headers have no wavelengths; they come from `cameras` in the annotation JSON. Values look like reflectance (-0.09 to 0.89).
+- Extra labels available for later: firmness, storage_days (stretch: firmness regression).
+
