@@ -42,6 +42,7 @@ default-groups = ["dev", "train"]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["notebooks"]  # exploration notebooks: compact style, not linted
 src = ["src", "api", "tests"]
 
 [tool.ruff.lint]
