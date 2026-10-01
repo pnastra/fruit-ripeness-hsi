@@ -12,8 +12,8 @@ data:            # M1: FRUIT=Mango by default
 inventory:       # M2: cube info + data/processed/inventory.parquet
 	uv run python -m fruithsi.io
 
-features:        # M3
-	@echo "not implemented yet (M3)"
+features:        # M3: data/processed/spectra.parquet
+	uv run python -m fruithsi.preprocess
 
 train-baseline:  # M5
 	@echo "not implemented yet (M5)"

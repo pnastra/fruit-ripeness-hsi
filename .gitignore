@@ -34,3 +34,9 @@ gcp-*.json
 # macOS / editors
 .DS_Store
 .vscode/
+
+# Local-only inspection notebooks (not pushed)
+notebooks/local/
+
+# Dataset-derived images: keep out of git until the dataset license is confirmed (README)
+reports/figures/

@@ -138,9 +138,9 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the decision (fruit, camera, task) is in §12, and a test checks the loader on one cube.
 
 #### M3 — Segmentation and mean spectra (≈4 h)
-- [ ] Simple fruit/background mask (threshold on intensity or a band ratio); save one mask example for the README
-- [ ] `preprocess.py`: one mean spectrum per image → `data/processed/spectra.parquet`; drop noisy edge bands
-- [ ] SNV and Savitzky–Golay as options
+- [x] Simple fruit/background mask (threshold on intensity or a band ratio); save one mask example for the README
+- [x] `preprocess.py`: one mean spectrum per image → `data/processed/spectra.parquet`; drop noisy edge bands
+- [x] SNV and Savitzky–Golay as options
 
 **Done when:** `spectra.parquet` exists, and a test checks the band count and that there are no NaNs.
 
@@ -324,6 +324,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-09-29 | M1 done | Chose **Mango** (2.7 GB zip, 4.1 GB extracted; 167 GB free). `make data` = `scripts/download_data.sh` (resumable, idempotent). Tree (depth 3) below. Next: M2 (io.py, inventory, go/no-go). |
 | 2026-10-01 | M2 done | **Go. Decision: Mango, camera VIS (Specim FX10, 397.7-1003.8 nm, 224 bands, 64x64 px crops), task = 3-class ripeness (unripe / perfect / overripe).** README license status updated (email sent 1 Oct). |
 | | | Why VIS: labels identical for both cameras; VIS has the wider range (chlorophyll ~680 nm and water ~970 nm). VIS_COR = Corning microHSI 410, 408-901 nm, 249 bands. |
+| 2026-10-01 | M3 done | `preprocess.py` (mask, mean spectrum, SNV, Savitzky-Golay via `transform()`), `make features` -> `data/processed/spectra.parquet` (562 VIS images x 192 bands, 476.5-998.2 nm). Local notebook `notebooks/local/inspect_samples.ipynb` (gitignored) for browsing samples. |
+| | | Mask = 850 nm band > 0.10, largest blob, fill holes, erode 3 px: 2245-2682 px per image. **Not Otsu** (histogram is a continuum, Otsu cut the fruit). Bands outside 475-1000 nm dropped (SNR < 10 below ~470 nm). Spectra file stores raw means only; SNV/SG are applied on demand. Mask figure saved to `reports/figures/` (gitignored until the license reply). Next: M4 (EDA, hard timebox). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
