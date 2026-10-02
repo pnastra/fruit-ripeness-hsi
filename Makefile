@@ -18,8 +18,8 @@ features:        # M3: data/processed/spectra.parquet
 train-baseline: # M5: majority + PLS-DA -> MLflow (mlflow.db)
 	uv run python -m fruithsi.baseline
 
-train-cnn:       # M6
-	@echo "not implemented yet (M6)"
+train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
+	uv run python -m fruithsi.train
 
 serve:           # M8
 	@echo "not implemented yet (M8)"

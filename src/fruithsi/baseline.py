@@ -16,7 +16,7 @@ from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
 
 from fruithsi import CLASSES
 from fruithsi.evaluate import LABELS, confusion, metrics, wilson_interval
-from fruithsi.preprocess import load_spectra, transform
+from fruithsi.preprocess import load_pixels, load_spectra, subset_mean, transform
 from fruithsi.split import (
     grouped_folds,
     grouped_holdout,
@@ -34,7 +34,7 @@ METRIC_NAMES = ("image_acc", "image_f1", "fruit_acc", "fruit_f1")
 class Majority:
     """Always predicts the most frequent training class (scores = class frequencies)."""
 
-    def fit(self, X, y, groups=None):
+    def fit(self, X, y, groups=None, idx=None):
         self.freq_ = np.bincount(y, minlength=N_CLASSES) / len(y)
         return self
 
@@ -83,7 +83,7 @@ class PLSDA:
             scores.append(np.mean(f1s))
         return list(ks)[int(np.argmax(scores))]  # argmax returns the first (fewest) on ties
 
-    def fit(self, X, y, groups=None):
+    def fit(self, X, y, groups=None, idx=None):
         Z = transform(X, self.transform_name)
         y = np.asarray(y)
         self.n_components_ = self.n_components or self._select_components(Z, y, groups)
@@ -94,6 +94,38 @@ class PLSDA:
         return self.pls_.predict(transform(X, self.transform_name))
 
 
+class PixelAugmented:
+    """Wrap a model so it trains on plain mean spectra plus `n_draws` pixel-subset means per image.
+
+    Only the training images are augmented; `decision_function` sees plain spectra, so test fruits
+    are never augmented. `pixels[i]` must be the pixel array of image i of the full X (`idx`
+    gives the global image indices of the rows passed to `fit`).
+    """
+
+    def __init__(self, make_base: Callable, pixels, n_draws=20, frac=0.05, seed=0):
+        self.make_base, self.pixels = make_base, pixels
+        self.n_draws, self.frac, self.seed = n_draws, frac, seed
+
+    def fit(self, X, y, groups=None, idx=None):
+        rng = np.random.default_rng(self.seed)
+        draws = np.stack([subset_mean(self.pixels[i], rng, self.frac)
+                          for i in idx for _ in range(self.n_draws)])
+        X_aug = np.concatenate([X, draws])
+        y_aug = np.concatenate([y, np.repeat(y, self.n_draws)])
+        g_aug = None
+        if groups is not None:
+            g_aug = np.concatenate([groups, np.repeat(groups, self.n_draws)])
+        self.model_ = self.make_base().fit(X_aug, y_aug, g_aug)
+        return self
+
+    def decision_function(self, X):
+        return self.model_.decision_function(X)
+
+    @property
+    def n_components_(self):
+        return self.model_.n_components_
+
+
 def run_cv(make_model: Callable, X, y, groups, folds) -> dict:
     """Fit on each train fold, score the test fold; metrics are computed per repeat.
 
@@ -101,25 +133,28 @@ def run_cv(make_model: Callable, X, y, groups, folds) -> dict:
     fruit exactly once. Returns per-repeat metrics, summed confusion matrix and chosen components.
     """
     oof: dict[int, np.ndarray] = {}
-    components = []
+    components, histories = [], []
     for repeat, train, test in folds:
-        model = make_model().fit(X[train], y[train], groups[train])
+        model = make_model().fit(X[train], y[train], groups[train], idx=train)
         oof.setdefault(repeat, np.full((len(y), N_CLASSES), np.nan))[test] = (
             model.decision_function(X[test])
         )
         if hasattr(model, "n_components_"):
             components.append(model.n_components_)
+        if hasattr(model, "history_"):
+            histories.append(model.history_)
     per_repeat = [metrics(y, oof[r], groups) for r in sorted(oof)]
     return {
         "per_repeat": per_repeat,
         "confusion": sum(confusion(y, oof[r]) for r in oof),
         "components": components,
+        "histories": histories,
     }
 
 
 def run_holdout(make_model: Callable, X, y, groups, split) -> dict:
     train, test = split
-    model = make_model().fit(X[train], y[train], groups[train])
+    model = make_model().fit(X[train], y[train], groups[train], idx=train)
     out = metrics(y[test], model.decision_function(X[test]), groups[test])
     out["n_test_fruits"] = int(len(np.unique(groups[test])))
     out["n_components"] = getattr(model, "n_components_", None)
@@ -157,6 +192,28 @@ def _confusion_figure(cm: np.ndarray, title: str):
     return fig
 
 
+def _loss_figure(histories: list[dict], title: str):
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(5.5, 3.6))
+    for k, h in enumerate(histories):
+        ax.plot(h["train"], color="tab:blue", alpha=0.25, lw=0.8,
+                label="train loss (one line per fold)" if k == 0 else None)
+        ax.plot(h["val"], color="tab:orange", alpha=0.25, lw=0.8,
+                label="validation loss" if k == 0 else None)
+        ax.plot(h["best_epoch"], h["val"][h["best_epoch"]], "k.", ms=4,
+                label="early-stopping epoch" if k == 0 else None)
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("cross-entropy")
+    ax.set_title(title, fontsize=9)
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    return fig
+
+
 def evaluate_run(name: str, make_model: Callable, X, y, groups, *, grouped: bool,
                  n_splits=5, n_repeats=5, seed=0, params: dict | None = None) -> dict:
     """Evaluate one model under one protocol and log it as one MLflow run."""
@@ -190,7 +247,21 @@ def evaluate_run(name: str, make_model: Callable, X, y, groups, *, grouped: bool
         mlflow.log_metric("holdout_n_test_fruits", hold["n_test_fruits"])
         mlflow.log_figure(_confusion_figure(cv["confusion"], f"{name}\nCV, summed over repeats"),
                           "confusion_cv.png")
+        if cv["histories"]:
+            mlflow.log_metric("cv_best_epoch_mean", float(np.mean([h["best_epoch"]
+                                                                   for h in cv["histories"]])))
+            mlflow.log_figure(_loss_figure(cv["histories"], f"{name}: loss per CV fold"),
+                              "loss_curves.png")
     return {"name": name, **summary, **{f"holdout_{k}": v for k, v in hold.items()}}
+
+
+def reset_experiment(name: str) -> None:
+    """Delete the experiment's earlier runs so that rerunning a script replaces them."""
+    import mlflow
+
+    client = mlflow.MlflowClient()
+    for run in client.search_runs([client.get_experiment_by_name(name).experiment_id]):
+        client.delete_run(run.info.run_id)
 
 
 def main() -> None:
@@ -199,14 +270,12 @@ def main() -> None:
 
     mlflow.set_tracking_uri(MLFLOW_URI)
     mlflow.set_experiment(EXPERIMENT)
-    client = mlflow.MlflowClient()
-    exp = client.get_experiment_by_name(EXPERIMENT)
-    for run in client.search_runs([exp.experiment_id]):  # rerunning replaces earlier runs
-        client.delete_run(run.info.run_id)
+    reset_experiment(EXPERIMENT)
 
     df, X, _ = load_spectra()
     y = df.ripeness.map({c: i for i, c in enumerate(CLASSES)}).to_numpy()
     groups = df.fruit_id.to_numpy()
+    pixels = load_pixels(df.hdr_path)  # needs `make features` (pixels.npz)
     print(f"{len(y)} labelled images, {len(np.unique(groups))} fruits, {X.shape[1]} bands")
 
     runs = [
@@ -214,6 +283,9 @@ def main() -> None:
         ("plsda_snv_grouped", lambda: PLSDA("snv"), True, {"model": "plsda", "transform": "snv"}),
         ("plsda_snv_random", lambda: PLSDA("snv"), False, {"model": "plsda", "transform": "snv"}),
         ("plsda_sg1_grouped", lambda: PLSDA("sg1"), True, {"model": "plsda", "transform": "sg1"}),
+        ("plsda_snv_grouped_aug",
+         lambda: PixelAugmented(lambda: PLSDA("snv"), pixels, n_draws=20, frac=0.05), True,
+         {"model": "plsda", "transform": "snv", "augmentation": "subset_mean x20, frac 0.05"}),
     ]
     rows = [evaluate_run(n, f, X, y, groups, grouped=g, params=p) for n, f, g, p in runs]
 

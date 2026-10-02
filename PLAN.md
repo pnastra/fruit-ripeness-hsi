@@ -160,8 +160,8 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** three runs are in MLflow (majority, PLS-DA grouped, PLS-DA random).
 
 #### M6 — 1D-CNN (≈5 h)
-- [ ] `dataset.py`, `model.py` (small 1D-CNN), `train.py` (loop, early stopping, fixed seeds, CPU/MPS)
-- [ ] Train on the grouped split; try **at most 3 configurations** (no grid search); log to MLflow
+- [x] `dataset.py`, `model.py` (small 1D-CNN), `train.py` (loop, early stopping, fixed seeds, CPU/MPS)
+- [x] Train on the grouped split; try **at most 3 configurations** (no grid search); log to MLflow
 
 **Done when:** the loss curve is sensible and the best CNN run is in MLflow.
 
@@ -332,6 +332,10 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-10-02 | M5 done | `split.py`, `evaluate.py`, `baseline.py`, `make train-baseline` -> 4 MLflow runs in experiment `baselines` (`sqlite:///mlflow.db`, rerun replaces them). Protocol: repeated StratifiedGroupKFold by fruit (5 folds x 5 repeats) is the headline; one grouped hold-out (8 test fruits) shown next to it. PLS-DA = SNV default, SG1 the one alternative, components by inner grouped CV. 22 tests pass. |
 | | | **Results (fruit-level acc, mean over 5 repeats, 95% Wilson CI, n=40):** majority 0.40 (26-55%); **PLS-DA SNV 0.505 (36-65%), macro-F1 0.49**; PLS-DA SG1 0.515; PLS-DA SNV with RANDOM split (leakage) 0.63 (48-76%). Single grouped hold-out is useless as evidence (8 fruits): PLS-DA 0.375 fruit acc, image acc 0.25. Label-permutation test (200 shuffles, same protocol): null mean 0.347, q95 0.46, p = 0.015, so the signal is real but modest and the grouped protocol does not leak. |
 | | | Confusion (grouped CV, per repeat of 80 images): recall unripe 0.33, perfect 0.61, overripe 0.56; unripe is mostly called perfect. Inner CV picks 8-9 PLS components (of max 10) for ~64 training images: likely overfitting. PLS-DA does not yet get the pixel-subset augmentation; do that in M6 so both models are compared level. |
+| 2026-10-02 | M6 done | `dataset.py`, `model.py` (1,411 params), `train.py`, `make train-cnn` -> 3 runs in MLflow experiment `cnn`; `make features` now also writes `data/processed/pixels.npz` (145 MB, gitignored; per-pixel spectra of the 80 labelled images). `make train-baseline` adds `plsda_snv_grouped_aug` so PLS-DA gets the same augmentation. 35 tests pass. |
+| | | **Results (grouped CV, fruit-level acc, mean over 5 repeats):** majority 0.400; PLS-DA SNV 0.505; **PLS-DA SNV + aug 0.535 (F1 0.52)**; PLS-DA SG1 0.515; CNN snv_aug 0.425; CNN snv_noaug 0.435; **CNN snv_sg1_aug 0.460 (F1 0.435), best CNN run**. Repeat-to-repeat sd is 0.03-0.06 and the 95% CI for n=40 is about +-15 points, so only PLS-DA > majority is a real gap; CNN vs majority and aug vs no-aug are not distinguishable. **The CNN does not beat PLS-DA**; README must say so (small data favours chemometrics). Best CNN chosen by CV macro-F1 among only 3 configs: slightly optimistic. |
+| | | Things found while getting the CNN to learn (all fixed using TRAINING data only, never test scores): (1) global average pooling hid *where* in the spectrum a feature is -> now pool to 8 segments + flatten; (2) raw SNV inputs share one dominant shape, so even a 30k-param net could not fit 50 spectra -> per-band standardisation with training-fold statistics; (3) validation = ~7 fruits is very noisy, early stopping hit epoch 0 -> EMA-smoothed val loss (0.3), dropout 0.5, wd 0.05, label smoothing 0.1 (diagnosed on 6 inner splits of one outer training set); a few folds still stop at epoch 0. |
+| | | **Augmentation finding:** random pixel subsets of one fruit barely differ (frac 0.4 gave noise = 2.3% of the fruit-to-fruit spread), so frac was cut to 0.05 (~124 px, 8%) for both CNN and PLS-DA. Even so it brings no measurable gain. A stronger variant (random contiguous patches, which would capture the centre-to-rim gradient and skin patches) changes the approved method: ask before trying. Open question for M7: which model to ship (PLS-DA aug is best but needs no torch; the plan's API/Docker assume a torch model). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```

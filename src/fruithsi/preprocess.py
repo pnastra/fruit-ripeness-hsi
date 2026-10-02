@@ -122,6 +122,51 @@ def load_spectra(path=None, labelled_only: bool = True):
     return df, df[bands].to_numpy(dtype=np.float64), np.array([float(b[3:]) for b in bands])
 
 
+PIXELS_FILE = "pixels.npz"
+
+
+def build_pixel_spectra(raw_dir=None, camera: str = CAMERA):
+    """Masked per-pixel spectra of every labelled image -> (pixels, offsets, hdr_paths).
+
+    `pixels` is one float32 array (total_pixels, bands) with the same band selection as the mean
+    spectra; image i owns rows offsets[i]:offsets[i + 1]. Only labelled images are kept (the
+    pixel-subset augmentation is only used for training on labelled images).
+    """
+    from fruithsi.io import RAW_DIR, build_inventory, load_camera_info, read_cube
+
+    raw_dir = RAW_DIR if raw_dir is None else raw_dir
+    wavelengths = load_camera_info(raw_dir)[camera]["wavelengths"]
+    keep = select_bands(wavelengths)
+    inv = build_inventory(raw_dir)
+    inv = inv[(inv.camera == camera) & inv.labelled].reset_index(drop=True)
+
+    chunks = []
+    for hdr in inv.hdr_path:
+        cube = read_cube(raw_dir / hdr)
+        chunks.append(cube[fruit_mask(cube, wavelengths)][:, keep].astype(np.float32))
+    offsets = np.concatenate([[0], np.cumsum([len(c) for c in chunks])])
+    return np.concatenate(chunks), offsets, inv.hdr_path.to_numpy(dtype=str)
+
+
+def load_pixels(hdr_paths, path=None) -> list[np.ndarray]:
+    """Per-image pixel arrays (n_pixels, bands), in the order of `hdr_paths`."""
+    from fruithsi.io import PROCESSED_DIR
+
+    with np.load(PROCESSED_DIR / PIXELS_FILE if path is None else path) as f:
+        pixels, offsets, names = f["pixels"], f["offsets"], f["hdr_paths"]
+    index = {str(n): i for i, n in enumerate(names)}
+    return [pixels[offsets[index[h]] : offsets[index[h] + 1]] for h in hdr_paths]
+
+
+def subset_mean(pixels: np.ndarray, rng: np.random.Generator, frac: float = 0.4) -> np.ndarray:
+    """Mean spectrum of a random subset (fraction `frac`) of an image's fruit pixels.
+
+    The augmentation: same fruit, same label, slightly different input on every draw.
+    """
+    n = max(1, int(round(frac * len(pixels))))
+    return pixels[rng.choice(len(pixels), size=n, replace=False)].mean(axis=0)
+
+
 def main() -> None:
     from fruithsi.io import PROCESSED_DIR
 
@@ -136,6 +181,10 @@ def main() -> None:
         f"mask pixels: min {df.n_pixels.min()}, median {df.n_pixels.median():.0f}, "
         f"max {df.n_pixels.max()}; below {MIN_MASK_PIXELS}: {small}"
     )
+    pixels, offsets, names = build_pixel_spectra()
+    out = PROCESSED_DIR / PIXELS_FILE
+    np.savez(out, pixels=pixels, offsets=offsets, hdr_paths=names)
+    print(f"wrote {out}: {len(names)} labelled images, {len(pixels)} pixels x {pixels.shape[1]}")
 
 
 if __name__ == "__main__":
