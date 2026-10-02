@@ -109,6 +109,19 @@ def build_spectra(raw_dir=None, camera: str = CAMERA):
     return pd.concat([out, bands], axis=1)
 
 
+def load_spectra(path=None, labelled_only: bool = True):
+    """Read spectra.parquet -> (DataFrame, X (n, bands), wavelengths (bands,))."""
+    import pandas as pd
+
+    from fruithsi.io import PROCESSED_DIR
+
+    df = pd.read_parquet(PROCESSED_DIR / "spectra.parquet" if path is None else path)
+    if labelled_only:
+        df = df[df.labelled].reset_index(drop=True)
+    bands = [c for c in df.columns if c.startswith("nm_")]
+    return df, df[bands].to_numpy(dtype=np.float64), np.array([float(b[3:]) for b in bands])
+
+
 def main() -> None:
     from fruithsi.io import PROCESSED_DIR
 

@@ -152,10 +152,10 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the decisions are recorded and the notebook runs top to bottom.
 
 #### M5 — Split, baselines, leakage demo (≈4 h)
-- [ ] `split.py`: grouped hold-out by fruit ID (plus `GroupKFold` for CV)
-- [ ] `baseline.py`: majority class and **PLS-DA**; metrics accuracy, macro-F1, confusion matrix; MLflow `sqlite:///mlflow.db`
-- [ ] Leakage demo: PLS-DA on a random split by image, logged as its own run
-- [ ] Test: no fruit ID in both train and test
+- [x] `split.py`: grouped hold-out by fruit ID (plus `GroupKFold` for CV)
+- [x] `baseline.py`: majority class and **PLS-DA**; metrics accuracy, macro-F1, confusion matrix; MLflow `sqlite:///mlflow.db`
+- [x] Leakage demo: PLS-DA on a random split by image, logged as its own run
+- [x] Test: no fruit ID in both train and test
 
 **Done when:** three runs are in MLflow (majority, PLS-DA grouped, PLS-DA random).
 
@@ -329,6 +329,9 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-10-01 | M4 done | `notebooks/01_eda.ipynb` (aggregate plots only, runs top to bottom): label counts, mean spectra raw/SNV/SG1, Fisher ratio, PCA, front-vs-back distance, chlorophyll index; Findings and "Decisions for M5" are at the end of the notebook. Local-only: `notebooks/local/spatial_heterogeneity.ipynb` (index maps, waits for license). |
 | | | Headline: classes are spectrally close (separability 0.06-0.08, PCA overlaps), so expect modest accuracy; majority baseline = 40% of fruits. M5 plan: repeated GroupKFold by fruit_id as headline + single hold-out, PLS-DA on SNV (SG1 as the one alternative). M6 needs my OK for pixel-subset augmentation. |
 | 2026-10-01 | M4 pushed; M6 decision | M4 pushed. **Approved for M6: pixel-subset-mean augmentation** (train folds only; test fruits always get the plain whole-fruit mean; give PLS-DA the same augmentation or report both so the comparison is level). Needs pixel spectra of the 80 labelled VIS images saved to `data/processed/` (gitignored, ~150 MB). Next: M5 in a fresh session. |
+| 2026-10-02 | M5 done | `split.py`, `evaluate.py`, `baseline.py`, `make train-baseline` -> 4 MLflow runs in experiment `baselines` (`sqlite:///mlflow.db`, rerun replaces them). Protocol: repeated StratifiedGroupKFold by fruit (5 folds x 5 repeats) is the headline; one grouped hold-out (8 test fruits) shown next to it. PLS-DA = SNV default, SG1 the one alternative, components by inner grouped CV. 22 tests pass. |
+| | | **Results (fruit-level acc, mean over 5 repeats, 95% Wilson CI, n=40):** majority 0.40 (26-55%); **PLS-DA SNV 0.505 (36-65%), macro-F1 0.49**; PLS-DA SG1 0.515; PLS-DA SNV with RANDOM split (leakage) 0.63 (48-76%). Single grouped hold-out is useless as evidence (8 fruits): PLS-DA 0.375 fruit acc, image acc 0.25. Label-permutation test (200 shuffles, same protocol): null mean 0.347, q95 0.46, p = 0.015, so the signal is real but modest and the grouped protocol does not leak. |
+| | | Confusion (grouped CV, per repeat of 80 images): recall unripe 0.33, perfect 0.61, overripe 0.56; unripe is mostly called perfect. Inner CV picks 8-9 PLS components (of max 10) for ~64 training images: likely overfitting. PLS-DA does not yet get the pixel-subset augmentation; do that in M6 so both models are compared level. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```

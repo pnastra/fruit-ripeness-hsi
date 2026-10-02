@@ -15,8 +15,8 @@ inventory:       # M2: cube info + data/processed/inventory.parquet
 features:        # M3: data/processed/spectra.parquet
 	uv run python -m fruithsi.preprocess
 
-train-baseline:  # M5
-	@echo "not implemented yet (M5)"
+train-baseline: # M5: majority + PLS-DA -> MLflow (mlflow.db)
+	uv run python -m fruithsi.baseline
 
 train-cnn:       # M6
 	@echo "not implemented yet (M6)"
