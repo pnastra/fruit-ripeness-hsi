@@ -1,0 +1,9 @@
+model,run,fruit_acc,fruit_acc_sd,ci_low,ci_high,fruit_f1,image_acc,image_f1,holdout_fruit_acc
+Majority class,majority_grouped,0.4000,0.0000,0.2635,0.5540,0.1905,0.4000,0.1905,0.3750
+PLS-DA (SNV),plsda_snv_grouped,0.5050,0.0430,0.3566,0.6526,0.4900,0.5075,0.4951,0.3750
+PLS-DA (Savitzky-Golay 1st derivative),plsda_sg1_grouped,0.5150,0.0339,0.3657,0.6616,0.4929,0.5300,0.5143,0.3750
+PLS-DA (SNV) + augmentation (shipped),plsda_snv_grouped_aug,0.5350,0.0406,0.3843,0.6796,0.5162,0.5200,0.5032,0.3750
+1D-CNN (SNV),cnn_snv_noaug,0.4350,0.0406,0.2938,0.5876,0.4053,0.4225,0.3983,0.3750
+1D-CNN (SNV) + augmentation,cnn_snv_aug,0.4250,0.0274,0.2851,0.5781,0.3895,0.4325,0.4013,0.3750
+1D-CNN (SNV + SG 1st derivative) + augmentation,cnn_snv_sg1_aug,0.4600,0.0583,0.3159,0.6111,0.4347,0.4450,0.4276,0.3750
+"PLS-DA (SNV), RANDOM split by image (leakage demo, not a result)",plsda_snv_random,0.6300,0.0696,0.4752,0.7620,0.6132,0.5975,0.5784,0.7333

@@ -149,6 +149,7 @@ def run_cv(make_model: Callable, X, y, groups, folds) -> dict:
         "confusion": sum(confusion(y, oof[r]) for r in oof),
         "components": components,
         "histories": histories,
+        "oof": oof,  # {repeat: (n_images, n_classes) out-of-fold scores}
     }
 
 
@@ -253,6 +254,50 @@ def evaluate_run(name: str, make_model: Callable, X, y, groups, *, grouped: bool
             mlflow.log_figure(_loss_figure(cv["histories"], f"{name}: loss per CV fold"),
                               "loss_curves.png")
     return {"name": name, **summary, **{f"holdout_{k}": v for k, v in hold.items()}}
+
+
+def permutation_test(make_model: Callable, X, y, groups, n_permutations: int = 200,
+                     seed: int = 0) -> dict:
+    """Is the grouped-CV fruit accuracy better than chance for this pipeline?
+
+    Shuffles the labels across fruits (a fruit's two images keep the same label), reruns the
+    identical grouped CV protocol each time, and compares the observed accuracy with that null.
+    A null centred on chance also confirms that the grouped protocol itself does not leak.
+    """
+    def score(labels):
+        folds = list(grouped_folds(labels, groups, 5, 5, 0))
+        return summarise(run_cv(make_model, X, labels, groups, folds))["cv_fruit_acc_mean"]
+
+    observed = score(y)
+    fruit_ids, first = np.unique(groups, return_index=True)
+    rng = np.random.default_rng(seed)
+    null = []
+    for _ in range(n_permutations):
+        shuffled = dict(zip(fruit_ids, rng.permutation(y[first]), strict=True))
+        null.append(score(np.array([shuffled[g] for g in groups])))
+    return summarise_permutations(observed, null, seeds=[seed])
+
+
+def summarise_permutations(observed: float, null, seeds: list[int]) -> dict:
+    """Summary of a null distribution; `null` is kept so chunks can be merged later."""
+    null = np.asarray(null, dtype=float)
+    return {
+        "observed_fruit_acc": observed, "n_permutations": int(len(null)), "seeds": seeds,
+        "null_mean": float(null.mean()), "null_q95": float(np.quantile(null, 0.95)),
+        "p_value": float(((null >= observed).sum() + 1) / (len(null) + 1)),
+        "null": [round(float(v), 4) for v in null],
+    }
+
+
+def merge_permutations(old: dict, new: dict) -> dict:
+    """Combine two chunks run with different seeds (same observed accuracy, more shuffles)."""
+    if set(old["seeds"]) & set(new["seeds"]):
+        raise ValueError("this seed was already run: use a different --perm-seed")
+    if abs(old["observed_fruit_acc"] - new["observed_fruit_acc"]) > 1e-9:
+        raise ValueError("the observed accuracy changed: rerun from scratch")
+    return summarise_permutations(
+        old["observed_fruit_acc"], old["null"] + new["null"], old["seeds"] + new["seeds"]
+    )
 
 
 def reset_experiment(name: str) -> None:

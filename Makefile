@@ -1,4 +1,4 @@
-.PHONY: data inventory features train-baseline train-cnn serve docker-build docker-run deploy test lint
+.PHONY: data inventory features model report explain train-baseline train-cnn serve docker-build docker-run deploy test lint
 
 test:
 	uv run pytest
@@ -17,6 +17,15 @@ features:        # M3: data/processed/spectra.parquet
 
 train-baseline: # M5: majority + PLS-DA -> MLflow (mlflow.db)
 	uv run python -m fruithsi.baseline
+
+model:           # M7: fit final PLS-DA on all data -> models/plsda_snv.json
+	uv run python -m fruithsi.export
+
+report:          # M7: docs/results.md + chart from MLflow (add ARGS="--permutation 200")
+	uv run python -m fruithsi.report $(ARGS)
+
+explain:         # M7: docs/band_importance.png (VIP vs CNN gradient x input)
+	uv run python -m fruithsi.explain
 
 train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
 	uv run python -m fruithsi.train
