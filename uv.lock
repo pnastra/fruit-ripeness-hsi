@@ -1112,8 +1112,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "numpy" },
     { name = "pydantic" },
-    { name = "scipy" },
-    { name = "torch" },
     { name = "uvicorn" },
 ]
 
@@ -1131,7 +1129,9 @@ train = [
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "scikit-learn" },
+    { name = "scipy" },
     { name = "spectral" },
+    { name = "torch" },
 ]
 
 [package.metadata]
@@ -1139,8 +1139,6 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "pydantic", specifier = ">=2.13.5" },
-    { name = "scipy", specifier = ">=1.18.1" },
-    { name = "torch", specifier = ">=2.14.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]
 
@@ -1158,7 +1156,9 @@ train = [
     { name = "pandas", specifier = ">=3.0.6" },
     { name = "pyarrow", specifier = ">=25.0.1" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
+    { name = "scipy", specifier = ">=1.18.1" },
     { name = "spectral", specifier = ">=0.25" },
+    { name = "torch", specifier = ">=2.14.0" },
 ]
 
 [[package]]

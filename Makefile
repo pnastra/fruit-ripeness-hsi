@@ -33,11 +33,11 @@ train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
 serve:           # M8: local API at http://127.0.0.1:8000 (docs at /docs)
 	uv run uvicorn api.main:app --reload --port 8000
 
-docker-build:    # M9
-	@echo "not implemented yet (M9)"
+docker-build:    # M9: image for Cloud Run (amd64; slower on an ARM Mac: emulated)
+	docker build --platform linux/amd64 -t fruit-ripeness:local .
 
-docker-run:      # M9
-	@echo "not implemented yet (M9)"
+docker-run:      # M9: http://localhost:8080/docs
+	docker run --rm -p 8080:8080 fruit-ripeness:local
 
 deploy:          # M10
 	@echo "not implemented yet (M10)"

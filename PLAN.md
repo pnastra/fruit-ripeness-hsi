@@ -182,8 +182,8 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** `make serve` works locally and the API tests pass.
 
 #### M9 — Docker (≈3 h)
-- [ ] `Dockerfile`: `python:3.12-slim`, CPU-only torch, serving deps only; image under ~1 GB; build with `--platform linux/amd64`
-- [ ] `make docker-build && make docker-run`; call `/predict` with a sample
+- [x] `Dockerfile`: `python:3.12-slim`, serving deps only (**no torch needed: PLS-DA is shipped as numpy**); image under ~1 GB; build with `--platform linux/amd64`
+- [x] `make docker-build && make docker-run`; call `/predict` with a sample
 
 **Done when:** the container answers `/predict` locally and the image size is recorded.
 
@@ -342,6 +342,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | **Open items / notes:** (1) `pyproject.toml` still lists torch and scipy as main dependencies; move them to the `train` group in M9 when the Dockerfile fixes the serving deps (main = numpy, fastapi, uvicorn, pydantic). (2) Environment quirk: background processes only make progress while a tool call is active (a 230 CPU-second job took 27 min of wall time); run long jobs with short polling calls, or in chunks (the permutation test is chunkable via `--perm-seed`). (3) The README must state: PLS-DA ships, the CNN lost, intervals are about +-15 points, grouped CV by fruit, license email pending. |
 | 2026-10-04 | M8 done | `api/main.py` (FastAPI): `GET /health`, `POST /predict` (`{"spectrum": [192 floats]}` -> predicted_class, confidence, probabilities, model_version), `/` redirects to `/docs` (pre-filled with a sample spectrum). One JSON log line per prediction on stdout (severity, message, timestamp, model_version, predicted_class, confidence; the input is never logged). `samples/` = 5 derived mean spectra of TRAINING images (`scripts/make_samples.py`; not for evaluation). `make serve` verified with curl: 200 / 422 / log line. 63 tests pass. |
 | | | Bug found by a test and fixed: FastAPI's default 422 response echoes the offending input, so a body containing `NaN` made the error response un-encodable and returned a 500; a custom handler now returns only loc/msg/type. Sample confidence is low (e.g. 0.38 for a training-set "perfect" fruit), as expected from the weak signal. |
+| 2026-10-04 | M9 done | `Dockerfile` (python:3.12-slim, uv 0.10.7, `uv sync --frozen --no-default-groups`, non-root user, `$PORT`, HEALTHCHECK) + `.dockerignore` (keeps `data/`, `mlruns/`, notebooks out of the build context). `make docker-build` (`--platform linux/amd64`, emulated on this ARM Mac, 13 s) and `make docker-run`. **Image size: 109 MB** (limit was ~1 GB): only fastapi, uvicorn, pydantic, starlette, numpy. Tested in the container: /health 200, /predict on a sample, wrong length and NaN -> 422, one JSON log line in `docker logs`, runs as uid 1000, healthy, honours `PORT=9090`. `pyproject.toml`: torch and scipy moved to the `train` group (main deps = numpy, fastapi, uvicorn, pydantic); local env unchanged (train is a default group). Docker Desktop had to be started with `open -a Docker`. |
+| | | **Stopped here on purpose: M10 needs the user** (GCP account, billing, $1 budget alert, interactive `gcloud auth login`; the plan says to ask before each step). Next: M10, then M11 (secrets/IAM, also ask first), then M12 README (live URL and CI badge come from M10/M11). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
