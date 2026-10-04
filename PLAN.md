@@ -175,9 +175,9 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the table and plot are saved for the README.
 
 #### M8 — API (≈3 h)
-- [ ] `api/main.py`: `GET /health`, `POST /predict` (validated spectrum length → class probabilities)
-- [ ] Each prediction logged as one JSON line to stdout (timestamp, model version, class, confidence)
-- [ ] Put 3–5 derived sample spectra in `samples/`; `TestClient` tests, including wrong length → 422
+- [x] `api/main.py`: `GET /health`, `POST /predict` (validated spectrum length → class probabilities)
+- [x] Each prediction logged as one JSON line to stdout (timestamp, model version, class, confidence)
+- [x] Put 3–5 derived sample spectra in `samples/`; `TestClient` tests, including wrong length → 422
 
 **Done when:** `make serve` works locally and the API tests pass.
 
@@ -340,6 +340,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | **Probabilities:** PLS-DA gives scores, so the API probabilities are softmax(scores / T) with T = 0.50 fitted on grouped out-of-fold scores: OOF log loss 0.939 vs 1.099 for chance; mean confidence 0.54 vs OOF image accuracy 0.52 (well calibrated, but expect confidences of only ~0.4-0.6). Final model is trained on all 80 labelled images (40 fruits). **Permutation test for the shipped model:** 60 shuffles (2 chunks, seeds 0 and 1), null mean 0.350, q95 0.460, max 0.49 vs observed 0.535: p = 0.016 (floor for 60 shuffles). |
 | | | **Band importance (honest):** PLS VIP is highest at 680-750 nm (chlorophyll absorption and red edge), near 950-1000 nm (water) and a bump at 540-560 nm, lowest on the NIR plateau: chemically plausible. The CNN gradient x input is nearly flat and unstable (seed-to-seed Spearman 0.24) and uncorrelated with VIP (-0.07); it agrees only on the water band. The top VIP value is at the noisy 998 nm edge band. |
 | | | **Open items / notes:** (1) `pyproject.toml` still lists torch and scipy as main dependencies; move them to the `train` group in M9 when the Dockerfile fixes the serving deps (main = numpy, fastapi, uvicorn, pydantic). (2) Environment quirk: background processes only make progress while a tool call is active (a 230 CPU-second job took 27 min of wall time); run long jobs with short polling calls, or in chunks (the permutation test is chunkable via `--perm-seed`). (3) The README must state: PLS-DA ships, the CNN lost, intervals are about +-15 points, grouped CV by fruit, license email pending. |
+| 2026-10-04 | M8 done | `api/main.py` (FastAPI): `GET /health`, `POST /predict` (`{"spectrum": [192 floats]}` -> predicted_class, confidence, probabilities, model_version), `/` redirects to `/docs` (pre-filled with a sample spectrum). One JSON log line per prediction on stdout (severity, message, timestamp, model_version, predicted_class, confidence; the input is never logged). `samples/` = 5 derived mean spectra of TRAINING images (`scripts/make_samples.py`; not for evaluation). `make serve` verified with curl: 200 / 422 / log line. 63 tests pass. |
+| | | Bug found by a test and fixed: FastAPI's default 422 response echoes the offending input, so a body containing `NaN` made the error response un-encodable and returned a 500; a custom handler now returns only loc/msg/type. Sample confidence is low (e.g. 0.38 for a training-set "perfect" fruit), as expected from the weak signal. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```

@@ -30,8 +30,8 @@ explain:         # M7: docs/band_importance.png (VIP vs CNN gradient x input)
 train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
 	uv run python -m fruithsi.train
 
-serve:           # M8
-	@echo "not implemented yet (M8)"
+serve:           # M8: local API at http://127.0.0.1:8000 (docs at /docs)
+	uv run uvicorn api.main:app --reload --port 8000
 
 docker-build:    # M9
 	@echo "not implemented yet (M9)"

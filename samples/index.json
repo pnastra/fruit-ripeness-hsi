@@ -1,0 +1,30 @@
+{
+ "note": "Derived mean spectra (476.5-998.2 nm, 192 bands) of labelled TRAINING images, for trying /predict. Not for evaluating the model.",
+ "samples": {
+  "unripe_front.json": {
+   "true_class": "unripe",
+   "fruit_id": 3,
+   "side": "front"
+  },
+  "perfect_front.json": {
+   "true_class": "perfect",
+   "fruit_id": 1,
+   "side": "front"
+  },
+  "overripe_front.json": {
+   "true_class": "overripe",
+   "fruit_id": 9,
+   "side": "front"
+  },
+  "unripe_back.json": {
+   "true_class": "unripe",
+   "fruit_id": 3,
+   "side": "back"
+  },
+  "overripe_back.json": {
+   "true_class": "overripe",
+   "fruit_id": 9,
+   "side": "back"
+  }
+ }
+}
