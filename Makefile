@@ -39,5 +39,15 @@ docker-build:    # M9: image for Cloud Run (amd64; slower on an ARM Mac: emulate
 docker-run:      # M9: http://localhost:8080/docs
 	docker run --rm -p 8080:8080 fruit-ripeness:local
 
-deploy:          # M10
-	@echo "not implemented yet (M10)"
+# --- Google Cloud (M10). Needs gcloud on PATH and `gcloud auth configure-docker` done once.
+PROJECT ?= fruit-ripeness-hsi
+REGION  ?= asia-southeast1
+IMAGE   := $(REGION)-docker.pkg.dev/$(PROJECT)/fruit-ripeness/api
+TAG     ?= $(shell git rev-parse --short HEAD)
+
+deploy:          # M10: build HEAD, push to Artifact Registry, deploy to Cloud Run (creates a new revision)
+	@test -z "$$(git status --porcelain)" || (echo "commit your changes first: the image tag must match the code" && exit 1)
+	docker build --platform linux/amd64 -t $(IMAGE):$(TAG) .
+	docker push $(IMAGE):$(TAG)
+	gcloud run deploy fruit-ripeness --image $(IMAGE):$(TAG) --region $(REGION) --project $(PROJECT) \
+		--allow-unauthenticated --min-instances 0 --max-instances 1 --memory 1Gi

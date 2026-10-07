@@ -41,8 +41,8 @@ I'm learning PyTorch training loops, Google Cloud Run, Artifact Registry and Git
 | Mac, Git, VS Code, Claude Code, `uv`, Docker Desktop | ✅ (from project 1) |
 | GitHub account | ✅ |
 | Free disk space for the chosen fruit (zip + extracted, about 2–3× the zip size) | ⬜ M1 |
-| Google Cloud account, billing enabled, **budget alert at $1** | ⬜ M10 |
-| `gcloud` CLI | ⬜ M10 |
+| Google Cloud account, billing enabled, **budget alert at $1** | ✅ project `fruit-ripeness-hsi`, budget 1 THB (alerts only) |
+| `gcloud` CLI | ✅ 588.0.0 at `/usr/local/share/google-cloud-sdk/bin` (not on the non-interactive PATH) |
 | Kaggle/Colab GPU | Only if CPU/MPS training is too slow (M6) |
 
 **Python:** 3.12 (safest for PyTorch). Use `uv python pin 3.12`.
@@ -188,8 +188,8 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the container answers `/predict` locally and the image size is recorded.
 
 #### M10 — Google Cloud setup and first deploy (≈4 h) — **ask me before each step**
-- [ ] GCP project, billing, **$1 budget alert**; install `gcloud`; enable Cloud Run and Artifact Registry
-- [ ] Artifact Registry repo in `asia-southeast1`; push the image
+- [x] GCP project, billing, **$1 budget alert**; install `gcloud`; enable Cloud Run and Artifact Registry
+- [x] Artifact Registry repo in `asia-southeast1`; push the image
 - [ ] `gcloud run deploy` (min 0, max 1, 1 GiB, unauthenticated); check `/health` and `/docs` from a cold start; find a prediction line in Cloud Logging
 
 **Done when:** the public URL works and is written in §12.
@@ -344,6 +344,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | Bug found by a test and fixed: FastAPI's default 422 response echoes the offending input, so a body containing `NaN` made the error response un-encodable and returned a 500; a custom handler now returns only loc/msg/type. Sample confidence is low (e.g. 0.38 for a training-set "perfect" fruit), as expected from the weak signal. |
 | 2026-10-04 | M9 done | `Dockerfile` (python:3.12-slim, uv 0.10.7, `uv sync --frozen --no-default-groups`, non-root user, `$PORT`, HEALTHCHECK) + `.dockerignore` (keeps `data/`, `mlruns/`, notebooks out of the build context). `make docker-build` (`--platform linux/amd64`, emulated on this ARM Mac, 13 s) and `make docker-run`. **Image size: 109 MB** (limit was ~1 GB): only fastapi, uvicorn, pydantic, starlette, numpy. Tested in the container: /health 200, /predict on a sample, wrong length and NaN -> 422, one JSON log line in `docker logs`, runs as uid 1000, healthy, honours `PORT=9090`. `pyproject.toml`: torch and scipy moved to the `train` group (main deps = numpy, fastapi, uvicorn, pydantic); local env unchanged (train is a default group). Docker Desktop had to be started with `open -a Docker`. |
 | | | **Stopped here on purpose: M10 needs the user** (GCP account, billing, $1 budget alert, interactive `gcloud auth login`; the plan says to ask before each step). Next: M10, then M11 (secrets/IAM, also ask first), then M12 README (live URL and CI badge come from M10/M11). |
+| 2026-10-07 | M10 (deployed) | **Live: https://fruit-ripeness-581425276724.asia-southeast1.run.app** (`/docs` is the demo; also reachable as fruit-ripeness-64afcstziq-as.a.run.app). User did billing, 1 THB budget alert, gcloud install, API enabling. I (one approval per step): Artifact Registry Docker repo `fruit-ripeness` in asia-southeast1; `gcloud auth configure-docker asia-southeast1-docker.pkg.dev` (credHelper line in ~/.docker/config.json, backup kept); pushed `.../fruit-ripeness/api:bb819d9` and `:v1` (same digest, ~105 MB); `gcloud run deploy fruit-ripeness` (public via allUsers run.invoker, min 0 / max 1, 1 GiB, 1 CPU) -> revision fruit-ripeness-00001-v7v. |
+| | | Verified live: /health 200 (0.58 s first request, 0.10 s warm), /docs 200, / -> 307 /docs, /predict 200 in 0.11 s, wrong length 422; the prediction appears in Cloud Logging as a structured INFO entry (jsonPayload: predicted_class, confidence, model_version). `make deploy` added (refuses with uncommitted changes; tags the image with the git SHA). **Open:** true cold-start check of /health and /docs after scale-to-zero (do at the start of the next exchange; the harness blocks long sleeps). Runs as the default compute service account (broad Editor rights): use a dedicated minimal service account in M11. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
