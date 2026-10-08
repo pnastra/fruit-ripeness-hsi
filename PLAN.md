@@ -219,6 +219,53 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 
 ---
 
+### Version 2 — Better targets and per-pixel normalisation (≈17 h)
+
+Same grouped CV and permutation test as v1, so results are directly comparable. No new data, dependencies or cloud resources (ordinal fitting uses scipy). Out of v2: the CNN, new fruits or cameras, unlabelled-image methods, the Streamlit UI (candidates for v3).
+
+#### V1 — Pre-register and freeze v1 (≈1.5 h)
+- [ ] Write the analysis plan into §12 **before** any v2 result exists: hypotheses ((a) per-pixel normalisation, (b) firmness/ordinal targets improve on v1); primary metric = fruit-level macro-F1 under the v1 protocol; decision rule = ship only if ≥ +0.05 macro-F1 over v1 **and** permutation p < 0.05; at most 2 variants per idea
+- [ ] Decide the **API input contract** (see the warning below)
+- [ ] Tag the current state `v1.0.0` (needs a push)
+
+**Done when:** the plan and decision rule are in §12 and v1 is tagged.
+
+#### V2 — Per-pixel normalisation features (≈3 h)
+- [ ] `preprocess.py`: a `pixel_norm` option, SNV on each pixel **before** averaging; one variant also drops the outer rim. Write to a new `spectra_pixnorm.parquet` so v1 stays reproducible
+- [ ] Quick descriptive check vs v1: within- vs between-fruit variance, class separability, front-vs-back distance
+
+**Done when:** the new features exist, a test checks them (bands, no NaNs, matches a hand computation), and the check is logged.
+
+#### V3 — Firmness regression (≈4 h)
+- [ ] PLS regression on firmness (raw or log, decided in V1) under grouped CV: RMSE, R², Spearman ρ; predicted-vs-measured plot
+- [ ] Turn predicted firmness into classes with cut-points fitted on training folds only, so it can be scored against v1
+- [ ] On both feature sets; log to MLflow
+
+**Done when:** the runs are in MLflow and the plot is saved.
+
+#### V4 — Ordinal classification (≈3 h)
+- [ ] Ordinal PLS (regress on 0/1/2, learned cut-points) and a cumulative-logit model on PLS scores
+- [ ] Extra metric: mean absolute class error (calling an unripe fruit overripe is worse than calling it perfect)
+- [ ] On both feature sets; log to MLflow
+
+**Done when:** the runs are in MLflow and confusion matrices are compared with v1, especially unripe recall (0.33 in v1).
+
+#### V5 — Compare and decide (≈3 h)
+- [ ] One table: v1 PLS-DA vs firmness→class vs ordinal, each on mean and pixel-normalised spectra (6 rows), plus majority
+- [ ] Apply the V1 decision rule; permutation test for any winner; VIP plot for the firmness model
+
+**Done when:** `docs/results_v2.md` states the decision, including "nothing beat v1" if that is the outcome.
+
+#### V6 — Ship v2, only if V5 found a winner (≈3 h)
+- [ ] Export the v2 model JSON (cut-points and firmness output included); API `0.2.0` with an optional `firmness_estimate` and the ordinal class
+- [ ] Regenerate `samples/`, update tests, README results and model card; push and let CD deploy
+
+**Done when:** the live `/openapi.json` shows 0.2.0 and the README reports v2 honestly.
+
+**Design warning (settle in V1):** per-pixel normalisation changes what the API needs as input. The API takes a *mean* spectrum, and a "mean of per-pixel SNV spectra" cannot be computed from a plain mean. If pixel normalisation wins, either (a) keep a 192-value input but document that it is the pixel-normalised mean and version the endpoint, or (b) ship pixel normalisation only if it wins clearly enough to justify the contract change.
+
+---
+
 ## 7. Out of scope
 
 - Downloading Avocado or Kiwi unless M2's go/no-go fails and I approve
@@ -354,6 +401,7 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-10-08 | M12 done | README rewritten for a hiring-manager reader: one-paragraph summary at the top with the live `/docs` link, CI badge and a screenshot of the live docs page (`docs/api_docs.png`, headless Chrome, shows v0.1.1); results table + chart, 5 EDA findings, band-importance plot and chemistry reading, method table, Mermaid architecture diagram (GitHub -> Actions CI -> Deploy via WIF -> Artifact Registry -> Cloud Run -> Cloud Logging), model card (intended use, not-for, limits, performance, confidence, license), API usage, full rerun commands, repository layout, data/license/citation (official BibTeX from the authors' repo; the 2021 paper covers avocado/kiwi, the mango data is the 2023 release). |
 | | | Definition of done checked: CI badge green, live URL, CNN-vs-PLS-DA comparison stated honestly, push to main redeploys, budget alert + scale to zero. **History audit:** largest blob ever committed is uv.lock (720 KB); no dataset files (only `data/raw/.gitkeep`); 0 secret-like strings; the only images are aggregate plots and the API screenshot. Still open (ask first): Artifact Registry cleanup policy, optional `ubuntu-24.04` pin; license reply from the dataset authors (update the README when it arrives; then the mask figure in `reports/figures/` could be published). |
 | 2026-10-08 | Housekeeping | Artifact Registry cleanup policy (approved): keep the 3 most recent versions, delete the rest (runs in the background ~daily). CI builds are one registry entry per image; local builds now use `--provenance=false` too, so the policy never splits an image into index/child parts (the first manual image bb819d9 had 3 entries and will be the first to go; the live image is always the newest, so it is always kept; rollback is limited to the last 3 images). CI and Deploy pinned to `ubuntu-24.04`. Dataset license: still no reply from the authors (README already says "awaiting reply"). |
+| 2026-10-08 | Version 2 planned | Added "Version 2" milestones V1-V6 to §6 (≈17 h): pre-register + freeze v1, per-pixel normalisation, firmness regression, ordinal classification, compare against a pre-set decision rule, ship only if a variant wins. Not started. |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
