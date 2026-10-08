@@ -86,7 +86,7 @@ class HealthResponse(BaseModel):
     band_range_nm: tuple[float, float]
 
 
-app = FastAPI(title="Mango ripeness from hyperspectral spectra", version="0.1.0",
+app = FastAPI(title="Mango ripeness from hyperspectral spectra", version="0.1.1",
               description=DESCRIPTION)
 
 

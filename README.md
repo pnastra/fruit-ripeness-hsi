@@ -1,5 +1,7 @@
 # fruit-ripeness-hsi
 
+[![CI](https://github.com/pnastra/fruit-ripeness-hsi/actions/workflows/ci.yml/badge.svg)](https://github.com/pnastra/fruit-ripeness-hsi/actions/workflows/ci.yml)
+
 Predict fruit ripeness from **hyperspectral images**, comparing a 1D-CNN honestly against a
 classic chemometrics baseline (PLS-DA), served as a container on Google Cloud Run.
 
