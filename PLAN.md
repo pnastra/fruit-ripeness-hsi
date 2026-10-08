@@ -195,9 +195,9 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** the public URL works and is written in §12.
 
 #### M11 — CI/CD (≈5 h) — **ask me before creating anything**
-- [ ] `ci.yml`: ruff + pytest on every push and PR; CI badge in the README
-- [ ] `deploy.yml`: on push to `main`, build → Artifact Registry → Cloud Run, authenticated with **Workload Identity Federation** (explain each IAM step)
-- [ ] Push a small visible change and confirm it redeploys
+- [x] `ci.yml`: ruff + pytest on every push and PR; CI badge in the README
+- [x] `deploy.yml`: on push to `main`, build → Artifact Registry → Cloud Run, authenticated with **Workload Identity Federation** (explain each IAM step)
+- [x] Push a small visible change and confirm it redeploys
 
 **Done when:** a push to `main` runs CI and updates the live service with no manual steps.
 
@@ -349,6 +349,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | 2026-10-08 | M10 done | Cold start measured after a day idle: first /health 3.5 s (3.15 s server-side; a new uvicorn startup is in the logs just before it), then ~0.1 s warm; /docs 200. |
 | 2026-10-08 | M11 (setup) | Approved step by step. GCP: enabled `iamcredentials`, `sts` (+ `iam`, needed to create service accounts and pools). Runtime SA `fruit-ripeness-run` (no roles), service switched to it (revision 00002-wdl; logs still flow). Deploy SA `github-deployer`: no project roles, only `artifactregistry.writer` on repo fruit-ripeness, `run.developer` on service fruit-ripeness, `iam.serviceAccountUser` on fruit-ripeness-run. WIF pool `github` + OIDC provider `github-actions` (issuer token.actions.githubusercontent.com, condition `assertion.repository == 'pnastra/fruit-ripeness-hsi'`), `workloadIdentityUser` for that repo's principalSet on github-deployer (first try PERMISSION_DENIED from pool propagation delay; retry worked). GitHub repo variables WIF_PROVIDER, DEPLOY_SA, RUN_SA (not secrets; no key file exists). |
 | | | Code: `.github/workflows/ci.yml` (push + PR: uv sync --frozen, ruff, pytest) and `deploy.yml` (workflow_run after CI succeeds on main: auth via WIF, build + push image tagged with the commit SHA, `gcloud run deploy` as fruit-ripeness-run, smoke test /health and /predict). torch now comes from the CPU-only index on Linux (`[tool.uv.sources]`), removing 15 CUDA packages + triton from CI installs; macOS unchanged. |
+| 2026-10-08 | M11 done | First push: CI failed at setup (`astral-sh/setup-uv@v10` does not exist: that action publishes no moving major tag) -> pinned `v10.2.0`; then CI green and the first automatic Deploy succeeded (1 min 14 s: WIF auth, build, push, deploy, smoke test); the Deploy run for the failed CI was correctly skipped. **Exit test passed:** pushing 27832d3 (CI badge in README + API version 0.1.0 -> 0.1.1) ran CI then Deploy with no manual steps; live `/openapi.json` went 0.1.0 -> 0.1.1 (revision 00004-bwf, image tagged with the full commit SHA, running as fruit-ripeness-run). |
+| | | **Open (ask first):** Artifact Registry holds 231 MB after 3 images (~60 MB added per push; free tier 0.5 GB) -> add a cleanup policy keeping the last ~3 images. Optional: pin `runs-on: ubuntu-24.04` (ubuntu-latest moves to Ubuntu 26 from 19 Oct); docs-only pushes also redeploy (harmless, but each adds an image). Next: M12 (README and model card). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
