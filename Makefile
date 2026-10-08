@@ -33,8 +33,9 @@ train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
 serve:           # M8: local API at http://127.0.0.1:8000 (docs at /docs)
 	uv run uvicorn api.main:app --reload --port 8000
 
-docker-build:    # M9: image for Cloud Run (amd64; slower on an ARM Mac: emulated)
-	docker build --platform linux/amd64 -t fruit-ripeness:local .
+docker-build:    # M9: image for Cloud Run (amd64; slower on an ARM Mac: emulated).
+                 # --provenance=false: one registry entry per image, so the cleanup policy (keep newest 3) never splits an image
+	docker build --platform linux/amd64 --provenance=false -t fruit-ripeness:local .
 
 docker-run:      # M9: http://localhost:8080/docs
 	docker run --rm -p 8080:8080 fruit-ripeness:local
@@ -47,7 +48,7 @@ TAG     ?= $(shell git rev-parse --short HEAD)
 
 deploy:          # M10: build HEAD, push to Artifact Registry, deploy to Cloud Run (creates a new revision)
 	@test -z "$$(git status --porcelain)" || (echo "commit your changes first: the image tag must match the code" && exit 1)
-	docker build --platform linux/amd64 -t $(IMAGE):$(TAG) .
+	docker build --platform linux/amd64 --provenance=false -t $(IMAGE):$(TAG) .
 	docker push $(IMAGE):$(TAG)
 	gcloud run deploy fruit-ripeness --image $(IMAGE):$(TAG) --region $(REGION) --project $(PROJECT) \
 		--allow-unauthenticated --min-instances 0 --max-instances 1 --memory 1Gi

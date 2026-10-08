@@ -25,7 +25,7 @@ jobs:
   deploy:
     # only when CI passed for a push (not for a pull request)
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moves to Ubuntu 26 from 19 Oct 2026
     steps:
       - uses: actions/checkout@v7
         with:
