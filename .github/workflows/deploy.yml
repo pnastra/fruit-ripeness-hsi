@@ -1,0 +1,59 @@
+# CD: after CI succeeds on main, build the image, push it to Artifact Registry and deploy to
+# Cloud Run. Authenticates with Workload Identity Federation: no service-account key exists.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]         # wait for the CI workflow above...
+    types: [completed]
+    branches: [main]        # ...on main only
+
+permissions:
+  contents: read
+  id-token: write           # lets the job request a GitHub OIDC token, exchanged for Google credentials
+
+concurrency:
+  group: deploy-cloud-run   # never two deploys at once; a newer push waits for the running one
+  cancel-in-progress: false
+
+env:
+  REGION: asia-southeast1
+  SERVICE: fruit-ripeness
+  IMAGE: asia-southeast1-docker.pkg.dev/fruit-ripeness-hsi/fruit-ripeness/api:${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  deploy:
+    # only when CI passed for a push (not for a pull request)
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}   # exactly the commit CI tested
+
+      # GitHub OIDC token -> Workload Identity Federation -> short-lived token for the deploy account
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Build and push the image (tagged with the commit SHA)
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build --platform linux/amd64 -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # updates the existing public service; its public access (IAM) is left unchanged
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" \
+            --service-account "${{ vars.RUN_SA }}" \
+            --min-instances 0 --max-instances 1 --memory 1Gi --quiet
+
+      - name: Smoke test the new revision
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format 'value(status.url)')
+          curl -fsS "$URL/health"
+          curl -fsS -X POST "$URL/predict" -H 'content-type: application/json' -d @samples/perfect_front.json

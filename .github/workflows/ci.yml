@@ -1,0 +1,31 @@
+# CI: lint + tests on every push and pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read            # read-only token: CI only needs to check out the code
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # uv, pinned to the version used locally; the cache makes later runs much faster
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.10.7"
+          enable-cache: true
+
+      # exact versions from uv.lock (torch comes from the CPU-only index on Linux)
+      - run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      # tests that need the (unpublished) dataset skip themselves when data/ is absent
+      - name: Tests
+        run: uv run pytest -q
