@@ -202,11 +202,11 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 **Done when:** a push to `main` runs CI and updates the live service with no manual steps.
 
 #### M12 — README and model card (≈4 h)
-- [ ] Top: live `/docs` link, screenshot, one-sentence summary, CI badge
-- [ ] Findings (M4), results table and band-importance plot (M7)
-- [ ] Architecture diagram: GitHub → Actions → Artifact Registry → Cloud Run → Cloud Logging
-- [ ] Model card: intended use, limits (one fruit, one camera, lab conditions, small sample, not for commercial grading), data source, license status
-- [ ] Credits, citation, how to run locally
+- [x] Top: live `/docs` link, screenshot, one-sentence summary, CI badge
+- [x] Findings (M4), results table and band-importance plot (M7)
+- [x] Architecture diagram: GitHub → Actions → Artifact Registry → Cloud Run → Cloud Logging
+- [x] Model card: intended use, limits (one fruit, one camera, lab conditions, small sample, not for commercial grading), data source, license status
+- [x] Credits, citation, how to run locally
 
 **Done when:** a stranger could understand and rerun the project from the README alone.
 
@@ -234,13 +234,13 @@ Thirteen small milestones (M0–M12): about 23 h in week 1 and 22 h in week 2. H
 
 ## 8. Definition of done
 
-- [ ] Public GitHub repo with README, MIT license (code), passing CI badge
-- [ ] A live Cloud Run URL
-- [ ] The CNN is compared honestly with PLS-DA; if it doesn't win, the README says so and explains why
-- [ ] Every push to `main` redeploys automatically
-- [ ] No secrets, raw images or large checkpoints in the git history
-- [ ] The dataset license status is stated in the README
-- [ ] The GCP budget alert is in place, and the service scales to zero
+- [x] Public GitHub repo with README, MIT license (code), passing CI badge
+- [x] A live Cloud Run URL
+- [x] The CNN is compared honestly with PLS-DA; if it doesn't win, the README says so and explains why
+- [x] Every push to `main` redeploys automatically
+- [x] No secrets, raw images or large checkpoints in the git history
+- [x] The dataset license status is stated in the README
+- [x] The GCP budget alert is in place, and the service scales to zero
 
 ---
 
@@ -351,6 +351,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | Code: `.github/workflows/ci.yml` (push + PR: uv sync --frozen, ruff, pytest) and `deploy.yml` (workflow_run after CI succeeds on main: auth via WIF, build + push image tagged with the commit SHA, `gcloud run deploy` as fruit-ripeness-run, smoke test /health and /predict). torch now comes from the CPU-only index on Linux (`[tool.uv.sources]`), removing 15 CUDA packages + triton from CI installs; macOS unchanged. |
 | 2026-10-08 | M11 done | First push: CI failed at setup (`astral-sh/setup-uv@v10` does not exist: that action publishes no moving major tag) -> pinned `v10.2.0`; then CI green and the first automatic Deploy succeeded (1 min 14 s: WIF auth, build, push, deploy, smoke test); the Deploy run for the failed CI was correctly skipped. **Exit test passed:** pushing 27832d3 (CI badge in README + API version 0.1.0 -> 0.1.1) ran CI then Deploy with no manual steps; live `/openapi.json` went 0.1.0 -> 0.1.1 (revision 00004-bwf, image tagged with the full commit SHA, running as fruit-ripeness-run). |
 | | | **Open (ask first):** Artifact Registry holds 231 MB after 3 images (~60 MB added per push; free tier 0.5 GB) -> add a cleanup policy keeping the last ~3 images. Optional: pin `runs-on: ubuntu-24.04` (ubuntu-latest moves to Ubuntu 26 from 19 Oct); docs-only pushes also redeploy (harmless, but each adds an image). Next: M12 (README and model card). |
+| 2026-10-08 | M12 done | README rewritten for a hiring-manager reader: one-paragraph summary at the top with the live `/docs` link, CI badge and a screenshot of the live docs page (`docs/api_docs.png`, headless Chrome, shows v0.1.1); results table + chart, 5 EDA findings, band-importance plot and chemistry reading, method table, Mermaid architecture diagram (GitHub -> Actions CI -> Deploy via WIF -> Artifact Registry -> Cloud Run -> Cloud Logging), model card (intended use, not-for, limits, performance, confidence, license), API usage, full rerun commands, repository layout, data/license/citation (official BibTeX from the authors' repo; the 2021 paper covers avocado/kiwi, the mango data is the 2023 release). |
+| | | Definition of done checked: CI badge green, live URL, CNN-vs-PLS-DA comparison stated honestly, push to main redeploys, budget alert + scale to zero. **History audit:** largest blob ever committed is uv.lock (720 KB); no dataset files (only `data/raw/.gitkeep`); 0 secret-like strings; the only images are aggregate plots and the API screenshot. Still open (ask first): Artifact Registry cleanup policy, optional `ubuntu-24.04` pin; license reply from the dataset authors (update the README when it arrives; then the mask figure in `reports/figures/` could be published). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
