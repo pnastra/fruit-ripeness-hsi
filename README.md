@@ -64,6 +64,15 @@ never both). Fruit-level accuracy averages the front and back image of each frui
 
 Full numbers: [`docs/results.md`](docs/results.md), [`docs/results.csv`](docs/results.csv), [`docs/permutation_test.json`](docs/permutation_test.json).
 
+**Version 2: nothing beat v1, so v1 stays live.** Before running anything, I wrote down two hypotheses and a
+shipping rule: at least +0.05 fruit macro-F1 over v1 (so 0.566) and a permutation p below 0.05.
+The hypotheses were (a) normalising each pixel (SNV) before averaging, with and without the fruit's rim, and (b) better targets: predicting firmness
+and cutting it into classes, or ordinal models that use unripe < perfect < overripe. The best v2 variant
+scored 0.485 against v1's 0.516, and every alternative was at or below v1. Firmness turned out not to be
+predictable from these spectra (cross-validated R² below 0). Ordinal models did worse even on mean absolute class
+error, because the spectra do not order the classes on one axis: v1 already confuses unripe with *overripe*.
+The bottleneck is the 40 fruits, not the model. Details: [`docs/results_v2.md`](docs/results_v2.md).
+
 ## Findings from the data
 
 From the exploratory analysis ([`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb)):
