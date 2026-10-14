@@ -1,4 +1,4 @@
-.PHONY: data inventory features features-v2 model report explain train-baseline train-cnn train-firmness serve docker-build docker-run deploy test lint
+.PHONY: data inventory features features-v2 model report explain train-baseline train-cnn train-firmness train-ordinal serve docker-build docker-run deploy test lint
 
 test:
 	uv run pytest
@@ -35,6 +35,9 @@ train-cnn:       # M6: 3 CNN configurations -> MLflow experiment "cnn"
 
 train-firmness: # V3: firmness PLS regression -> classes, MLflow experiment v2_firmness
 	uv run python -m fruithsi.firmness
+
+train-ordinal:  # V4: ordinal PLS + cumulative logit, MLflow experiment v2_ordinal
+	uv run python -m fruithsi.ordinal
 
 serve:           # M8: local API at http://127.0.0.1:8000 (docs at /docs)
 	uv run uvicorn api.main:app --reload --port 8000
