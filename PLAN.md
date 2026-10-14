@@ -237,9 +237,9 @@ Same grouped CV and permutation test as v1, so results are directly comparable. 
 **Done when:** the new features exist, a test checks them (bands, no NaNs, matches a hand computation), and the check is logged.
 
 #### V3 — Firmness regression (≈4 h)
-- [ ] PLS regression on firmness (raw or log, decided in V1) under grouped CV: RMSE, R², Spearman ρ; predicted-vs-measured plot
-- [ ] Turn predicted firmness into classes with cut-points fitted on training folds only, so it can be scored against v1
-- [ ] On both feature sets; log to MLflow
+- [x] PLS regression on firmness (raw or log, decided in V1) under grouped CV: RMSE, R², Spearman ρ; predicted-vs-measured plot
+- [x] Turn predicted firmness into classes with cut-points fitted on training folds only, so it can be scored against v1
+- [x] On both feature sets; log to MLflow
 
 **Done when:** the runs are in MLflow and the plot is saved.
 
@@ -407,6 +407,8 @@ Claude Code adds 2–4 lines at the end of every session: date, milestone, what 
 | | | **API contract (decided): option (b).** `/predict` keeps taking a plain mean spectrum (192 bands). Pixel normalisation ships only if it passes the rule by itself, and then as a separate versioned endpoint whose docs say the input is the mean of per-pixel SNV spectra; the existing endpoint never changes meaning. Firmness/ordinal winners on mean spectra can stay on `/predict` (API 0.2.0, optional `firmness_estimate`). **v1 frozen:** tag `v1.0.0` on 5ebb57d. Next: V2. |
 | 2026-10-14 | V2 done | `preprocess.py`: `mean_spectrum(..., keep, pixel_norm=True)` (SNV per pixel over the 192 kept bands, then average); `make features-v2` -> `data/processed/spectra_pixnorm.parquet` (562 images x 2 variants, `variant` column: `pixnorm` = v1 mask, `pixnorm_core` = 4 px more eroded, median 1863 vs 2480 px); `load_pixnorm(variant)`. v1 `spectra.parquet` untouched. Tests: hand computation, brightness invariance, file check (bands, no NaNs, same images as v1). 66 tests pass. |
 | | | Descriptive check (local `notebooks/local/v2_pixnorm_check.ipynb`, labelled 80 images, scale-free): v1 SNV / pixnorm / pixnorm_core: within-fruit variance share 0.147 / 0.144 / 0.158; separability (5 PCs) 0.076 / 0.078 / 0.076; max Fisher 0.185 / 0.190 / 0.176 (all at 886 nm); front-back / between-fruit distance 0.67 / 0.65 / 0.69. **Pixel normalisation barely changes the features; rim removal is slightly worse.** Expect hypothesis (a) to fail the rule; V3-V5 still run it as pre-registered. Note: augmentation for pixnorm in V3+ = subset means of `snv(pixels)` from `pixels.npz` (the core variant has no pixel coordinates there; use plain pixnorm augmentation or none for it, decide in V3 and report). Next: V3. |
+| 2026-10-14 | V3 done | `firmness.py` (`make train-firmness`, 82 s): `FirmnessPLS` = PLS regression on raw firmness (components by inner grouped CV, lowest RMSE) + two cut-points fitted on the inner out-of-fold predictions (training folds only, best macro-F1); class scores `[f - c_hi, 0, c_lo - f]` are linear in f, so the fruit-level average equals cutting the fruit's mean prediction. Same v1 protocol and augmentation (pixnorm draws = subset means of per-pixel SNV pixels). MLflow experiment `v2_firmness`, 2 runs; plot `docs/firmness_pred_vs_measured.png`. 69 tests pass. |
+| | | **Results (grouped CV, fruit level, mean of 5 repeats):** SNV mean: macro-F1 0.405, acc 0.415, firmness RMSE 5268, R2 -0.18, Spearman 0.13; pixnorm: macro-F1 0.457, acc 0.460, RMSE 5028, R2 -0.07, Spearman 0.27. Unripe recall 0.41 / 0.39 (v1 0.33). **Firmness is not predictable from these spectra** (RMSE about the fruit-to-fruit sd, negative R2; predictions sit in a flat band at about 9-10k). Both are below v1 (0.516), far from the 0.566 bar: firmness->class fails. Pixnorm is better than mean here (+0.05 F1), but both are weak and within noise (repeat sd 0.03-0.06). No permutation test needed (no candidate). Next: V4 (ordinal). |
 
 M1 data tree (`data/raw/`, gitignored). Mango has **VIS and VIS_COR only, no NIR** (M2 correction: VIS_COR is NOT a corrected variant, it is a different camera, see M2 row):
 ```
