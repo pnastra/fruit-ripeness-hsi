@@ -47,11 +47,20 @@ def fruit_mask(
     return mask
 
 
-def mean_spectrum(cube: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    """Average spectrum over the masked pixels -> (bands,)."""
+def mean_spectrum(
+    cube: np.ndarray, mask: np.ndarray, keep: np.ndarray | None = None, pixel_norm: bool = False
+) -> np.ndarray:
+    """Average spectrum over the masked pixels -> (bands,), optionally only the `keep` bands.
+
+    pixel_norm=True applies SNV to every pixel (over the kept bands) *before* averaging, so
+    pixel-to-pixel brightness differences (curvature, gloss) do not weight the mean.
+    """
     if not mask.any():
         raise ValueError("empty mask")
-    return cube[mask].mean(axis=0)
+    pixels = cube[mask] if keep is None else cube[mask][:, keep]
+    if pixel_norm:
+        pixels = snv(pixels.astype(np.float64))
+    return pixels.mean(axis=0)
 
 
 def snv(spectra: np.ndarray) -> np.ndarray:
@@ -122,6 +131,60 @@ def load_spectra(path=None, labelled_only: bool = True):
     return df, df[bands].to_numpy(dtype=np.float64), np.array([float(b[3:]) for b in bands])
 
 
+PIXNORM_FILE = "spectra_pixnorm.parquet"
+# v2 variants (pre-registered, PLAN §12): per-pixel SNV over the v1 mask, and the same with a
+# further 4 px eroded (7 px in total, about the outer 30% of the fruit area) to drop the limb.
+PIXNORM_VARIANTS = {"pixnorm": 0, "pixnorm_core": 4}
+
+
+def build_pixnorm_spectra(raw_dir=None, camera: str = CAMERA):
+    """Mean of per-pixel SNV spectra per image, one row per (image, variant) -> DataFrame.
+
+    Same images, metadata and bands as `build_spectra`, plus a `variant` column.
+    """
+    import pandas as pd
+
+    from fruithsi.io import RAW_DIR, build_inventory, load_camera_info, read_cube
+
+    raw_dir = RAW_DIR if raw_dir is None else raw_dir
+    wavelengths = load_camera_info(raw_dir)[camera]["wavelengths"]
+    keep = select_bands(wavelengths)
+    inv = build_inventory(raw_dir)
+    inv = inv[inv.camera == camera].drop(columns=["camera"]).reset_index(drop=True)
+
+    rows = {v: ([], []) for v in PIXNORM_VARIANTS}
+    for hdr in inv.hdr_path:
+        cube = read_cube(raw_dir / hdr)
+        mask = fruit_mask(cube, wavelengths)
+        for variant, extra in PIXNORM_VARIANTS.items():
+            m = ndimage.binary_erosion(mask, iterations=extra) if extra else mask
+            rows[variant][0].append(mean_spectrum(cube, m, keep, pixel_norm=True))
+            rows[variant][1].append(int(m.sum()))
+
+    parts = []
+    for variant, (spectra, n_pixels) in rows.items():
+        meta = inv.assign(variant=variant, n_pixels=n_pixels)
+        bands = pd.DataFrame(np.asarray(spectra), columns=band_columns(wavelengths[keep]))
+        parts.append(pd.concat([meta, bands], axis=1))
+    return pd.concat(parts, ignore_index=True)
+
+
+def load_pixnorm(variant: str = "pixnorm", path=None, labelled_only: bool = True):
+    """Like `load_spectra`, for one variant of spectra_pixnorm.parquet."""
+    import pandas as pd
+
+    from fruithsi.io import PROCESSED_DIR
+
+    if variant not in PIXNORM_VARIANTS:
+        raise ValueError(f"unknown variant {variant!r}; choose from {list(PIXNORM_VARIANTS)}")
+    df = pd.read_parquet(PROCESSED_DIR / PIXNORM_FILE if path is None else path)
+    df = df[df.variant == variant].reset_index(drop=True)
+    if labelled_only:
+        df = df[df.labelled].reset_index(drop=True)
+    bands = [c for c in df.columns if c.startswith("nm_")]
+    return df, df[bands].to_numpy(dtype=np.float64), np.array([float(b[3:]) for b in bands])
+
+
 PIXELS_FILE = "pixels.npz"
 
 
@@ -167,6 +230,16 @@ def subset_mean(pixels: np.ndarray, rng: np.random.Generator, frac: float = 0.4)
     return pixels[rng.choice(len(pixels), size=n, replace=False)].mean(axis=0)
 
 
+def main_pixnorm() -> None:
+    from fruithsi.io import PROCESSED_DIR
+
+    df = build_pixnorm_spectra()
+    out = PROCESSED_DIR / PIXNORM_FILE
+    df.to_parquet(out, index=False)
+    print(f"wrote {out}: {len(df)} rows ({df.variant.value_counts().to_dict()})")
+    print(df.groupby("variant").n_pixels.describe()[["min", "50%", "max"]])
+
+
 def main() -> None:
     from fruithsi.io import PROCESSED_DIR
 
@@ -188,4 +261,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main_pixnorm() if "--pixnorm" in sys.argv else main()

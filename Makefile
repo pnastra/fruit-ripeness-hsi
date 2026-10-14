@@ -1,4 +1,4 @@
-.PHONY: data inventory features model report explain train-baseline train-cnn serve docker-build docker-run deploy test lint
+.PHONY: data inventory features features-v2 model report explain train-baseline train-cnn serve docker-build docker-run deploy test lint
 
 test:
 	uv run pytest
@@ -14,6 +14,9 @@ inventory:       # M2: cube info + data/processed/inventory.parquet
 
 features:        # M3: data/processed/spectra.parquet
 	uv run python -m fruithsi.preprocess
+
+features-v2:     # V2: data/processed/spectra_pixnorm.parquet (per-pixel SNV, two variants)
+	uv run python -m fruithsi.preprocess --pixnorm
 
 train-baseline: # M5: majority + PLS-DA -> MLflow (mlflow.db)
 	uv run python -m fruithsi.baseline

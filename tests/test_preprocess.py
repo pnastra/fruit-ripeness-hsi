@@ -82,3 +82,40 @@ def test_spectra_parquet():
     assert not df[bands].isna().any().any()
     assert np.isfinite(df[bands].to_numpy()).all()
     assert (df.n_pixels > 200).all()
+
+
+def test_pixel_norm_matches_hand_computation():
+    rng = np.random.default_rng(0)
+    cube = rng.random((6, 6, 10)) + 0.5
+    mask = np.zeros((6, 6), bool)
+    mask[1:4, 2:5] = True
+    keep = np.arange(10) >= 2
+    px = cube[mask][:, keep]
+    hand = ((px - px.mean(1, keepdims=True)) / px.std(1, keepdims=True)).mean(0)
+    np.testing.assert_allclose(mean_spectrum(cube, mask, keep, pixel_norm=True), hand)
+    np.testing.assert_allclose(mean_spectrum(cube, mask, keep), px.mean(0))
+
+
+def test_pixel_norm_ignores_per_pixel_brightness():
+    cube, disc = disc_cube()
+    cube[disc] *= np.random.default_rng(2).uniform(0.5, 2.0, disc.sum())[:, None]
+    m = fruit_mask(cube, WL)
+    plain = mean_spectrum(cube, m, pixel_norm=True)
+    np.testing.assert_allclose(plain, snv(np.linspace(0.5, 1.5, len(WL)))[0], atol=1e-5)
+
+
+@pytest.mark.skipif(
+    not (PROCESSED_DIR / "spectra_pixnorm.parquet").exists(), reason="run `make features-v2` first"
+)
+def test_pixnorm_parquet():
+    from fruithsi.preprocess import PIXNORM_VARIANTS, load_pixnorm, load_spectra
+
+    v1, _, wl1 = load_spectra()
+    for variant in PIXNORM_VARIANTS:
+        df, X, wl = load_pixnorm(variant)
+        assert X.shape == (80, 192) and np.isfinite(X).all()
+        np.testing.assert_array_equal(wl, wl1)
+        assert list(df.hdr_path) == list(v1.hdr_path)
+        np.testing.assert_allclose(X.mean(1), 0, atol=1e-9)  # mean of SNV pixels has mean 0
+    core, _, _ = load_pixnorm("pixnorm_core")
+    assert (core.n_pixels < v1.n_pixels).all()
