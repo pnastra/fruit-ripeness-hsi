@@ -1,0 +1,12 @@
+model,features,aug,run,fruit_f1,fruit_f1_sd,fruit_acc,mace,recall_unripe,passes_bar
+majority,-,no,majority_grouped,0.19047619047619047,0.0,0.4,,,False
+PLS-DA (v1 shipped),"mean, SNV",yes,v1_reference_plsda_snv_aug,0.516179839734497,0.046387314591797416,0.5349999999999999,0.63,0.3153846153846154,False
+PLS-DA,per-pixel SNV,yes,plsda_pixnorm_aug,0.4853360052401907,0.060264202262274996,0.505,0.6599999999999999,0.2923076923076923,False
+"PLS-DA, no aug (reference for the next row)","mean, SNV",no,plsda_snv_grouped,0.48998958124624326,0.0503053163862767,0.505,,,False
+"PLS-DA, no aug","per-pixel SNV, rim dropped",no,plsda_pixnorm_core_noaug,0.48152222013091583,0.03221655501367585,0.5,0.67,0.33076923076923076,False
+firmness PLS -> class,"mean, SNV",yes,firmness_snv_aug,0.4049270025742249,0.061337472904887676,0.4149999999999999,,0.4076923076923077,False
+firmness PLS -> class,per-pixel SNV,yes,firmness_pixnorm_aug,0.45695872639402574,0.05587723549535887,0.4600000000000001,,0.38461538461538464,False
+ordinal PLS,"mean, SNV",yes,ordinal_pls_snv_aug,0.34180120037136363,0.07723098689569652,0.36,0.7699999999999999,0.3769230769230769,False
+ordinal PLS,per-pixel SNV,yes,ordinal_pls_pixnorm_aug,0.341675002426868,0.03872335760232919,0.375,0.7549999999999999,0.33076923076923076,False
+cumulative logit on PLS,"mean, SNV",yes,cumlogit_pls_snv_aug,0.3676440827476584,0.016681694670862106,0.40499999999999997,0.6849999999999999,0.2692307692307692,False
+cumulative logit on PLS,per-pixel SNV,yes,cumlogit_pls_pixnorm_aug,0.36986917457873403,0.027519614473065453,0.40499999999999997,0.6900000000000001,0.25384615384615383,False
